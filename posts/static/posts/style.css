@@ -1,0 +1,15 @@
+li a {
+    color: blue;
+}
+
+body {
+    background: white url("images/calendar-pixabay.jpg") no-repeat;
+}
+
+main > .container {
+    padding: 60px 15px 0;
+}
+
+.lead {
+    color: white;
+}

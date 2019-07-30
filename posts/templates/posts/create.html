@@ -1,0 +1,19 @@
+{% extends 'posts/base.html' %}
+{% block content %}
+  <div class="lead">
+    <ol>
+      <li>Title and write about what you just did.</li>
+      <li>If you wasted time/can't remember, put a <b>*</b> in the title.</li>
+      <li>Be consistent with your titles if you want better analytics 
+        (don't put dinner one time and eating another; put dinner or eating both times).
+      </li>
+      <li>If you want to group a new event with an old one, put the
+        old and new event together in the new title (old: {eating}, new: {eating, YouTube}).
+      </li>
+    </ol>
+  </div>
+  <form method="post">{% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Save">
+  </form>
+{% endblock %}

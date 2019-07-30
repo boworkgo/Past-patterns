@@ -1,0 +1,30 @@
+{% extends 'posts/base.html' %}
+{% block content %}
+  {% if events != None %}
+    {% if events.count < 10 %}
+      <p class="lead">Please come back when you have 10 events. No rush.</p>
+    {% elif events %}
+      <p class="lead">Some friendly stats about you.</p>
+      {% load static %}
+      <div class="row">
+        <div class="col-md-4">
+          <div class="thumbnail">
+            <img src="{% static 'posts/images/past_day.png' %}" alt="past_day" style="width:100%" class="rounded">
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="thumbnail">
+            <img src="{% static 'posts/images/groups.png' %}" alt="groups" style="width:100%" class="rounded">
+          </div>
+        </div>
+        <div class="col-md-4">
+            <div class="thumbnail">
+              <img src="{% static 'posts/images/avg_hrs.png' %}" alt="avg_hrs" style="width:100%" class="rounded">
+            </div>
+          </div>
+      </div>
+    {% endif %}
+  {% else %}
+    <p class="lead">I am not detecting any posts.</p>
+  {% endif %}
+{% endblock %}

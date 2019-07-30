@@ -1,0 +1,10 @@
+/*_cache/
+/cache/
+__pycache__/
+__init__.py
+*.log
+db.sqlite3
+secret.py
+*.vscode
+migrations/
+scrapped_useful.txt
