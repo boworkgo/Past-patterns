@@ -4,22 +4,40 @@
     {% if events.count < 10 %}
       <p class="lead">Please come back when you have 10 events. No rush.</p>
     {% elif events %}
-      <p class="lead">Some friendly stats about you.</p>
-      <script
-			  src="https://code.jquery.com/jquery-3.4.1.min.js"
-			  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
-        crossorigin="anonymous"></script>
+      <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
-      <canvas id="test_chart" width="500" height="500"></canvas>
+      <canvas id="group_pie" width="400" height="400"></canvas>
       <script type="text/javascript">
-        $.get("{% url 'posts:analyticstestchartjson' %}", function (data) {
-          var ctx = $("#test_chart").get(0).getContext("2d");
+        var randomColorGenerator = function() { 
+            return '#' + (Math.random().toString(16) + '0000000').slice(2, 8); 
+        };
+        function arrayRandomColors(len) {
+          var arr = [];
+          for (var i = 0; i < len; i++) {
+            arr.push(randomColorGenerator());
+          }
+          return arr;
+        }
+        $.get("{% url 'posts:analyticsgroupingpiejson' %}", function(data) {
+          var ctx = $("#group_pie").get(0).getContext("2d");
+          // console.log(arrayRandomColors(data['data']['datasets'][0]['data'].length));
+          // console.log(data['data']['labels']);
           new Chart(ctx, {
-              type: 'line',
-              data: data,
-              options: {
-                  responsive: false
-              }
+            type: 'pie',
+            data: {
+              datasets: [{
+                data: data['data']['datasets'][0]['data'],
+                backgroundColor: arrayRandomColors(data['data']['datasets'][0]['data'].length)
+              }],
+              labels: data['data']['labels']
+            },
+            options: {
+              title: {
+                display: true,
+                text: "Grouping events by connecting titles"
+              },
+              responsive: false
+            }
           });
         });
       </script>

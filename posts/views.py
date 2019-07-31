@@ -153,15 +153,7 @@ class EventAnalysis:
 
     def past_day_pie(self):
         past_day = self.data[self.data.day_id == self.last_day_id]
-        patches, texts, _ = plt.pie(
-            past_day["time_spent"], autopct="%1.1f%%", startangle=90
-        )
-        plt.legend(patches, past_day["title"], loc="best")
-        plt.title("Your day so far")
-        plt.axis("equal")
-        plt.tight_layout()
-        plt.savefig("posts/static/posts/images/past_day.png")
-        plt.close()
+        return past_day["time_spent"], past_day["title"]
 
     def grouping_pie(self):
         group_hours, group_words = [], []
@@ -179,21 +171,10 @@ class EventAnalysis:
                     ]
                 )
             )
-        patches, texts, _ = plt.pie(group_hours, autopct="%1.1f%%", startangle=90)
-        plt.legend(patches, group_words, loc="best")
-        plt.title("Time you spend ordered by groupings by title")
-        plt.axis("equal")
-        plt.tight_layout()
-        plt.savefig("posts/static/posts/images/groups.png")
-        plt.close()
+        return (group_hours, group_words)
 
     def time_plot(self):
-        self.time_df.plot()
-        plt.xlabel("Date")
-        plt.ylabel("Hours")
-        plt.title("Average time between posts")
-        plt.savefig("posts/static/posts/images/avg_hrs.png")
-        plt.close()
+        return self.time_df
 
     def generate_visuals(self):
         self.past_day_pie()
@@ -201,9 +182,10 @@ class EventAnalysis:
         self.time_plot()
 
 
+e = EventAnalysis()
+
 def analytics(request):
     if len(Event.objects.all()) > 0:
-        e = EventAnalysis()
         print(e.data)
     return render(
         request, "posts/analytics.html", context={"events": Event.objects.all()}
@@ -219,7 +201,6 @@ class DeleteView(generic.DeleteView):
 from chartjs.views.lines import BaseLineChartView
 
 class LineChartJSONView(BaseLineChartView):
-    template_name='posts/analytics.html'
     def get_labels(self):
         """Return 7 labels for the x-axis."""
         return ["January", "February", "March", "April", "May", "June", "July"]
@@ -234,3 +215,24 @@ class LineChartJSONView(BaseLineChartView):
         return [[75, 44, 92, 11, 44, 95, 35],
                 [41, 92, 18, 3, 73, 87, 92],
                 [87, 21, 94, 3, 90, 13, 65]]
+
+class GroupingPieChartJSONView(BaseLineChartView): # Come on, django-chartjs. Only line chart is supported?
+    stats, labels = e.grouping_pie()
+    
+    def get_labels(self):
+        return self.labels
+    
+    def get_providers(self):
+        return ["first_set"]
+    
+    def get_data(self):
+        return [self.stats]
+    
+    def get_context_data(self):
+        context = {
+            'data': {
+                'labels': self.get_labels(),
+                'datasets': self.get_datasets()
+            }
+        }
+        return context
