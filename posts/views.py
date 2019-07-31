@@ -4,7 +4,6 @@ import sqlite3
 from collections import defaultdict
 from datetime import datetime
 from functools import reduce
-
 import matplotlib.pyplot as plt
 import numpy as np
 from django import forms
@@ -12,14 +11,12 @@ from django.forms import Textarea
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse, reverse_lazy
 from django.views import generic
-
 import pandas as pd
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 from pandas.io import sql
-
 from .models import Event
-
+from chartjs.views.lines import BaseLineChartView
 
 class IndexView(generic.ListView):
     template_name = "posts/index.html"
@@ -78,7 +75,6 @@ class EventAnalysis:
         conn.close()
         self.clean_data()
         self.feature_engineering()
-        self.generate_visuals()
 
     def string_clean(self, s):
         s = re.sub("[^a-zA-Z ]+", "", s).lower()
@@ -153,7 +149,9 @@ class EventAnalysis:
 
     def past_day_pie(self):
         past_day = self.data[self.data.day_id == self.last_day_id]
-        return past_day["time_spent"], past_day["title"]
+        total = sum(past_day["time_spent"])
+        percentages = past_day["time_spent"].map(lambda x: x / total)
+        return list(percentages), list(past_day["title"])
 
     def grouping_pie(self):
         group_hours, group_words = [], []
@@ -171,18 +169,10 @@ class EventAnalysis:
                     ]
                 )
             )
-        return (group_hours, group_words)
+        return group_hours, group_words
 
     def time_plot(self):
         return self.time_df
-
-    def generate_visuals(self):
-        self.past_day_pie()
-        self.grouping_pie()
-        self.time_plot()
-
-
-e = EventAnalysis()
 
 def analytics(request):
     if len(Event.objects.all()) > 0:
@@ -198,41 +188,31 @@ class DeleteView(generic.DeleteView):
     def get_success_url(self):
         return reverse("posts:index")
 
-from chartjs.views.lines import BaseLineChartView
-
-class LineChartJSONView(BaseLineChartView):
-    def get_labels(self):
-        """Return 7 labels for the x-axis."""
-        return ["January", "February", "March", "April", "May", "June", "July"]
-
-    def get_providers(self):
-        """Return names of datasets."""
-        return ["Central", "Eastside", "Westside"]
-
-    def get_data(self):
-        """Return 3 datasets to plot."""
-
-        return [[75, 44, 92, 11, 44, 95, 35],
-                [41, 92, 18, 3, 73, 87, 92],
-                [87, 21, 94, 3, 90, 13, 65]]
-
-class GroupingPieChartJSONView(BaseLineChartView): # Come on, django-chartjs. Only line chart is supported?
-    stats, labels = e.grouping_pie()
+class PieChartJSONView(BaseLineChartView):
+    def __init__(self, method):
+        self.stats, self.labels = method
     
     def get_labels(self):
         return self.labels
-    
-    def get_providers(self):
-        return ["first_set"]
     
     def get_data(self):
         return [self.stats]
     
     def get_context_data(self):
-        context = {
-            'data': {
-                'labels': self.get_labels(),
-                'datasets': self.get_datasets()
-            }
+        return {
+            'labels': self.get_labels(),
+            'datasets': self.get_datasets()
         }
-        return context
+
+
+e = EventAnalysis()
+
+
+class GroupingPieChartJSONView(PieChartJSONView):
+    def __init__(self):
+        super().__init__(e.grouping_pie())
+
+
+class PastDayPieChartJSONView(PieChartJSONView):
+    def __init__(self):
+        super().__init__(e.past_day_pie())
