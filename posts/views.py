@@ -14,6 +14,7 @@ from django.urls import reverse, reverse_lazy
 from django.views import generic
 
 import pandas as pd
+from chartjs.views.lines import BaseLineChartView
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 from pandas.io import sql
@@ -78,7 +79,6 @@ class EventAnalysis:
         conn.close()
         self.clean_data()
         self.feature_engineering()
-        self.generate_visuals()
 
     def string_clean(self, s):
         s = re.sub("[^a-zA-Z ]+", "", s).lower()
@@ -153,15 +153,9 @@ class EventAnalysis:
 
     def past_day_pie(self):
         past_day = self.data[self.data.day_id == self.last_day_id]
-        patches, texts, _ = plt.pie(
-            past_day["time_spent"], autopct="%1.1f%%", startangle=90
-        )
-        plt.legend(patches, past_day["title"], loc="best")
-        plt.title("Your day so far")
-        plt.axis("equal")
-        plt.tight_layout()
-        plt.savefig("posts/static/posts/images/past_day.png")
-        plt.close()
+        total = sum(past_day["time_spent"])
+        percentages = past_day["time_spent"].map(lambda x: x / total)
+        return list(percentages), list(past_day["title"])
 
     def grouping_pie(self):
         group_hours, group_words = [], []
@@ -179,31 +173,14 @@ class EventAnalysis:
                     ]
                 )
             )
-        patches, texts, _ = plt.pie(group_hours, autopct="%1.1f%%", startangle=90)
-        plt.legend(patches, group_words, loc="best")
-        plt.title("Time you spend ordered by groupings by title")
-        plt.axis("equal")
-        plt.tight_layout()
-        plt.savefig("posts/static/posts/images/groups.png")
-        plt.close()
+        return group_hours, group_words
 
     def time_plot(self):
-        self.time_df.plot()
-        plt.xlabel("Date")
-        plt.ylabel("Hours")
-        plt.title("Average time between posts")
-        plt.savefig("posts/static/posts/images/avg_hrs.png")
-        plt.close()
-
-    def generate_visuals(self):
-        self.past_day_pie()
-        self.grouping_pie()
-        self.time_plot()
+        return (list(self.time_df["time_spent"]), self.time_df.index.tolist())
 
 
 def analytics(request):
     if len(Event.objects.all()) > 0:
-        e = EventAnalysis()
         print(e.data)
     return render(
         request, "posts/analytics.html", context={"events": Event.objects.all()}
@@ -215,3 +192,35 @@ class DeleteView(generic.DeleteView):
 
     def get_success_url(self):
         return reverse("posts:index")
+
+
+class ChartJSONView(BaseLineChartView):
+    def __init__(self, method):
+        self.stats, self.labels = method
+
+    def get_labels(self):
+        return self.labels
+
+    def get_data(self):
+        return [self.stats]
+
+    def get_context_data(self):
+        return {"labels": self.get_labels(), "datasets": self.get_datasets()}
+
+
+e = EventAnalysis()
+
+
+class GroupingPieChartJSONView(ChartJSONView):
+    def __init__(self):
+        super().__init__(e.grouping_pie())
+
+
+class PastDayPieChartJSONView(ChartJSONView):
+    def __init__(self):
+        super().__init__(e.past_day_pie())
+
+
+class AverageHoursJSONView(ChartJSONView):
+    def __init__(self):
+        super().__init__(e.time_plot())

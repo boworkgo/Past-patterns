@@ -3,7 +3,10 @@ li a {
 }
 
 body {
-    background: white url("images/calendar-pixabay.jpg") no-repeat;
+    background: white url("images/calendar-pixabay.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    opacity: 1
 }
 
 main > .container {
@@ -12,4 +15,8 @@ main > .container {
 
 .lead {
     color: white;
+}
+
+.contrast {
+    background-color: white;
 }
