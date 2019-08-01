@@ -6,6 +6,7 @@
     {% elif events %}
       <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
       <div class="row">
         <div class="col-lg-4">
           <canvas id="group_pie" width="500" height="500"></canvas>
@@ -25,15 +26,17 @@
         function pieGraphGet(url, attribute, title) {
           $.get(url, function(data) {
             var ctx = $(attribute).get(0).getContext("2d");
+            var labels = data['labels'];
+            var data = data['datasets'][0]['data'];
             new Chart(ctx, {
               type: 'pie',
               data: {
                 datasets: [{
-                  data: data['datasets'][0]['data'],
-                  backgroundColor: arrayRandomColors(data['datasets'][0]['data'].length),
-                  hoverBackgroundColor: arrayRandomColors(data['datasets'][0]['data'].length)
+                  data: data,
+                  backgroundColor: arrayRandomColors(data.length),
+                  hoverBackgroundColor: arrayRandomColors(data.length)
                 }],
-                labels: data['labels']
+                labels: labels
               },
               options: {
                 legend: {
@@ -54,6 +57,73 @@
         }
         pieGraphGet("{% url 'posts:analyticsgroupingpiejson' %}", "#group_pie", "Grouping events by connecting titles");
         pieGraphGet("{% url 'posts:analyticspastdaypiejson' %}", "#past_day_pie", "Past day events");
+      </script>
+      <canvas id="average_hours" width="1000" height="500"></canvas>
+      <script type="text/javascript">
+        $.get("{% url 'posts:analyticsaveragehoursjson' %}", function(data) {
+          function jsonMaker(date, hour) {
+            return {
+              t: date,
+              y: hour
+            }
+          }
+          var formattedData = [];
+          for (var i = 0; i < data.labels.length; i++) {
+            formattedData.push(jsonMaker(data.labels[i], data['datasets'][0]['data'][i]));
+          }
+          var ctx = $('#average_hours').get(0).getContext("2d");
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              datasets: [{
+                data: formattedData,
+                backgroundColor: "#123456",
+                label: "Avg event hours",
+                fill: false,
+                borderColor: "#654321",
+                pointRadius: 0
+              }]
+            },
+            options: {
+              scales: {
+                xAxes: [{
+                  type: 'time',
+                  distribution: 'series',
+                  time: {
+                    unit: 'day'
+                  },
+                  ticks: {
+                    fontColor: "#ffffff"
+                  },
+                  gridLines: {
+                    display: false
+                  },
+                  scaleLabel: {
+                    display: true,
+                  }
+                }],
+                yAxes: [{
+                  scaleLabel: {
+                  },
+                  ticks: {
+                    fontColor: "#ffffff"
+                  },
+                  gridLines: {
+                    display: false,
+                    font: "#ffffff"
+                  }
+                }]
+              },
+              title: {
+                fontColor: "black",
+                fontSize: 18,
+                display: true,
+                text: "Average event time per day"
+              },
+              responsive: true
+            }
+          });
+        });
       </script>
     {% endif %}
   {% else %}

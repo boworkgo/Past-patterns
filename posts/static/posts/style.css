@@ -16,3 +16,7 @@ main > .container {
 .lead {
     color: white;
 }
+
+.contrast {
+    background-color: white;
+}

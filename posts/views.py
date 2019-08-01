@@ -4,6 +4,7 @@ import sqlite3
 from collections import defaultdict
 from datetime import datetime
 from functools import reduce
+
 import matplotlib.pyplot as plt
 import numpy as np
 from django import forms
@@ -11,12 +12,15 @@ from django.forms import Textarea
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse, reverse_lazy
 from django.views import generic
+
 import pandas as pd
+from chartjs.views.lines import BaseLineChartView
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 from pandas.io import sql
+
 from .models import Event
-from chartjs.views.lines import BaseLineChartView
+
 
 class IndexView(generic.ListView):
     template_name = "posts/index.html"
@@ -172,7 +176,8 @@ class EventAnalysis:
         return group_hours, group_words
 
     def time_plot(self):
-        return self.time_df
+        return (list(self.time_df["time_spent"]), self.time_df.index.tolist())
+
 
 def analytics(request):
     if len(Event.objects.all()) > 0:
@@ -188,31 +193,34 @@ class DeleteView(generic.DeleteView):
     def get_success_url(self):
         return reverse("posts:index")
 
-class PieChartJSONView(BaseLineChartView):
+
+class ChartJSONView(BaseLineChartView):
     def __init__(self, method):
         self.stats, self.labels = method
-    
+
     def get_labels(self):
         return self.labels
-    
+
     def get_data(self):
         return [self.stats]
-    
+
     def get_context_data(self):
-        return {
-            'labels': self.get_labels(),
-            'datasets': self.get_datasets()
-        }
+        return {"labels": self.get_labels(), "datasets": self.get_datasets()}
 
 
 e = EventAnalysis()
 
 
-class GroupingPieChartJSONView(PieChartJSONView):
+class GroupingPieChartJSONView(ChartJSONView):
     def __init__(self):
         super().__init__(e.grouping_pie())
 
 
-class PastDayPieChartJSONView(PieChartJSONView):
+class PastDayPieChartJSONView(ChartJSONView):
     def __init__(self):
         super().__init__(e.past_day_pie())
+
+
+class AverageHoursJSONView(ChartJSONView):
+    def __init__(self):
+        super().__init__(e.time_plot())
